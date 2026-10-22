@@ -67,9 +67,11 @@ export function Screen({
 }: ScreenProps) {
   const body = scroll ? (
     <ScrollView
+      style={styles.screenScroll}
       contentContainerStyle={[styles.screenContent, contentStyle]}
       keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator
+      nestedScrollEnabled
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -528,6 +530,7 @@ export function LoadingBlock({ label = "Cargando..." }: { label?: string }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  screenScroll: { flex: 1 },
   screenContent: {
     padding: spacing.xl,
     paddingBottom: spacing.xxl,
