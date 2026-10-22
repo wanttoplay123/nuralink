@@ -6,6 +6,27 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
+function getRecoveryRedirectTarget(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const { pathname, search, hash } = window.location;
+  const currentPath = pathname.replace(/\/+$/, "") || "/";
+  if (currentPath === "/reset-password") return null;
+
+  const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+  const searchParams = new URLSearchParams(search);
+  const isRecovery =
+    hashParams.get("type") === "recovery" ||
+    searchParams.get("type") === "recovery";
+
+  return isRecovery ? `/reset-password${search}${hash}` : null;
+}
+
+const recoveryRedirectTarget = getRecoveryRedirectTarget();
+if (recoveryRedirectTarget) {
+  window.location.replace(recoveryRedirectTarget);
+}
+
 export const isSupabaseConfigured = Boolean(
   url &&
     key &&
