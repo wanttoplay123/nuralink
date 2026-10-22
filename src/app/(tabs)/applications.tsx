@@ -20,7 +20,7 @@ import {
   formatDate,
   formatTime,
 } from "@/lib/format";
-import { colors, radius, spacing } from "@/lib/theme";
+import { colors, spacing } from "@/lib/theme";
 import type { Application } from "@/types";
 
 export default function ApplicationsScreen() {
@@ -88,6 +88,11 @@ export default function ApplicationsScreen() {
         eyebrow="MI ACTIVIDAD"
         title="Mis postulaciones"
         subtitle="Sigue el estado de cada solicitud y revisa el turno al que te postulaste."
+        right={
+          active.length > 0 ? (
+            <Badge label={`${active.length} en curso`} tone="info" />
+          ) : undefined
+        }
       />
 
       {error ? (
@@ -246,9 +251,14 @@ function ApplicationCard({
 }
 
 const styles = StyleSheet.create({
-  section: { gap: spacing.md },
-  sectionTitle: { fontSize: 16, fontWeight: "800", color: colors.navy },
-  card: { gap: spacing.md },
+  section: { gap: 10 },
+  sectionTitle: {
+    fontSize: 15.5,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.2,
+  },
+  card: { gap: spacing.md, padding: 17 },
   cardTop: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -263,27 +273,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardTopText: { flex: 1 },
-  institution: { fontSize: 12, color: colors.textMuted },
+  institution: { fontSize: 10.5, color: colors.textMuted },
   shiftTitle: {
     fontSize: 15,
+    lineHeight: 20,
     fontWeight: "800",
     color: colors.navy,
+    letterSpacing: -0.2,
     marginTop: 2,
   },
   meta: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: 8,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 11,
+    padding: 9,
   },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaText: { fontSize: 11, color: colors.textMuted },
+  metaText: { fontSize: 10.5, color: colors.text },
   note: {
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 11,
     padding: spacing.md,
     gap: 3,
   },
-  noteLabel: { fontSize: 10, fontWeight: "800", color: colors.textSoft },
-  noteText: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
+  noteLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: colors.textSoft,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  noteText: { fontSize: 11.5, color: colors.textMuted, lineHeight: 17 },
 });

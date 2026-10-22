@@ -22,7 +22,7 @@ import {
   professionalTypeLabel,
   roleLabel,
 } from "@/lib/format";
-import { colors, spacing } from "@/lib/theme";
+import { colors, shadow, spacing } from "@/lib/theme";
 import type { AdminData, Role } from "@/types";
 
 const roleShort: Record<Role, string> = {
@@ -158,7 +158,23 @@ export default function AdminScreen() {
       <ScreenHeader
         eyebrow="ADMINISTRACIÓN"
         title="Verificaciones"
-        subtitle="Revisa instituciones y credenciales profesionales antes de habilitar su participación. Las decisiones quedan registradas en la base de datos."
+        subtitle="Revisa instituciones y credenciales profesionales antes de habilitar su participación."
+        right={
+          <Badge
+            label={
+              pendingInstitutions.length + pendingCredentials.length === 0
+                ? "Al día"
+                : `${
+                    pendingInstitutions.length + pendingCredentials.length
+                  } pendientes`
+            }
+            tone={
+              pendingInstitutions.length + pendingCredentials.length === 0
+                ? "success"
+                : "warning"
+            }
+          />
+        }
       />
 
       {error ? (
@@ -174,12 +190,28 @@ export default function AdminScreen() {
 
       <View style={styles.summary}>
         <View style={styles.summaryCard}>
-          <Ionicons name="business-outline" size={20} color={colors.primary} />
+          <View
+            style={[styles.summaryIcon, { backgroundColor: colors.primarySoft }]}
+          >
+            <Ionicons
+              name="business-outline"
+              size={18}
+              color={colors.primary}
+            />
+          </View>
           <Text style={styles.summaryValue}>{pendingInstitutions.length}</Text>
           <Text style={styles.summaryLabel}>Instituciones pendientes</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Ionicons name="id-card-outline" size={20} color={colors.primary} />
+          <View
+            style={[styles.summaryIcon, { backgroundColor: colors.infoSoft }]}
+          >
+            <Ionicons
+              name="id-card-outline"
+              size={18}
+              color={colors.info}
+            />
+          </View>
           <Text style={styles.summaryValue}>{pendingCredentials.length}</Text>
           <Text style={styles.summaryLabel}>Credenciales pendientes</Text>
         </View>
@@ -418,20 +450,35 @@ export default function AdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  summary: { flexDirection: "row", gap: spacing.md },
+  summary: { flexDirection: "row", gap: spacing.sm },
   summaryCard: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.lg,
+    padding: 14,
     gap: 4,
+    minHeight: 122,
+    ...shadow,
   },
-  summaryValue: { fontSize: 27, fontWeight: "800", color: colors.navy },
-  summaryLabel: { fontSize: 11, color: colors.textMuted, lineHeight: 15 },
-  section: { gap: spacing.md },
-  card: { gap: spacing.md },
+  summaryIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  summaryValue: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.6,
+  },
+  summaryLabel: { fontSize: 10.5, color: colors.textMuted, lineHeight: 14 },
+  section: { gap: 10 },
+  card: { gap: spacing.md, padding: 16 },
   cardTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -446,8 +493,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardText: { flex: 1 },
-  cardTitle: { fontSize: 14, fontWeight: "800", color: colors.navy },
-  cardMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  cardTitle: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.1,
+  },
+  cardMeta: { fontSize: 10.5, color: colors.textMuted, marginTop: 2 },
   detail: { fontSize: 11, color: colors.textMuted, lineHeight: 17 },
   detailBlock: { gap: 3 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },

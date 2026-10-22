@@ -2,11 +2,11 @@ import { useCallback, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as DocumentPicker from "expo-document-picker";
 import { useApp } from "@/context/app";
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   Field,
@@ -23,7 +23,7 @@ import {
   roleLabel,
   formatRelative,
 } from "@/lib/format";
-import { colors, radius, spacing } from "@/lib/theme";
+import { colors, gradients, radius, spacing } from "@/lib/theme";
 import type {
   CredentialDocument,
   Institution,
@@ -241,16 +241,58 @@ export default function ProfileScreen() {
 
   return (
     <Screen refreshing={loading} onRefresh={load}>
-      <View style={styles.header}>
-        <Avatar name={profile.full_name} size={64} />
-        <View style={styles.headerText}>
-          <Text style={styles.name}>{profile.full_name || "Tu perfil"}</Text>
-          <Text style={styles.role}>{roleLabel(profile.role)}</Text>
-          <View style={styles.headerBadges}>
-            <Badge label={profile.city || "Ciudad sin definir"} tone="neutral" icon="location-outline" />
+      <LinearGradient
+        colors={gradients.hero}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.profileHero}
+      >
+        <View pointerEvents="none" style={styles.profileHeroOrb} />
+        <View style={styles.profileHeroTop}>
+          <View style={styles.avatarRing}>
+            <Avatar name={profile.full_name} size={64} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.name}>
+              {profile.full_name || "Tu perfil"}
+            </Text>
+            <Text style={styles.role}>{roleLabel(profile.role)}</Text>
+            <View style={styles.headerBadges}>
+              <View style={styles.cityPill}>
+                <Ionicons
+                  name="location-outline"
+                  size={12}
+                  color="rgba(255,255,255,0.72)"
+                />
+                <Text style={styles.cityPillText}>
+                  {profile.city || "Ciudad sin definir"}
+                </Text>
+              </View>
+              {profile.role === "nurse" && credentials ? (
+                <VerificationBadge status={credentials.verification_status} />
+              ) : null}
+              {profile.role === "institution" && institution ? (
+                <VerificationBadge
+                  status={institution.verification_status}
+                />
+              ) : null}
+            </View>
           </View>
         </View>
-      </View>
+        <View style={styles.profileHeroFoot}>
+          <View style={styles.heroFootIcon}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={15}
+              color="#B7F0E3"
+            />
+          </View>
+          <Text style={styles.profileHeroFootText}>
+            Tus datos están protegidos y solo se comparten con instituciones
+            verificadas.
+          </Text>
+        </View>
+      </LinearGradient>
 
       {error ? (
         <Notice tone="danger" icon="alert-circle-outline">
@@ -602,19 +644,83 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
+  profileHero: {
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    gap: spacing.lg,
+    overflow: "hidden",
+  },
+  profileHeroOrb: {
+    position: "absolute",
+    top: -86,
+    right: -70,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(143, 227, 212, 0.1)",
+  },
+  profileHeroTop: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.lg,
   },
+  avatarRing: {
+    padding: 4,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
   headerText: { flex: 1, gap: 3 },
-  name: { fontSize: 22, fontWeight: "800", color: colors.navy },
-  role: { fontSize: 12, color: colors.textMuted },
+  name: {
+    fontSize: 21,
+    fontWeight: "800",
+    color: colors.white,
+    letterSpacing: -0.45,
+  },
+  role: { fontSize: 12, color: "rgba(255,255,255,0.7)" },
   headerBadges: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.xs,
-    marginTop: 4,
+    alignItems: "center",
+    gap: 7,
+    marginTop: 6,
+  },
+  cityPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  cityPillText: {
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  profileHeroFoot: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.12)",
+    paddingTop: spacing.md,
+  },
+  heroFootIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileHeroFootText: {
+    flex: 1,
+    color: "rgba(255,255,255,0.56)",
+    fontSize: 10.5,
+    lineHeight: 15.5,
   },
   card: { gap: spacing.md },
   typeRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },

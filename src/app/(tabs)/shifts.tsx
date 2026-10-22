@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "@/context/app";
 import {
   Badge,
+  Button,
   Card,
   EmptyState,
   Field,
@@ -87,36 +88,58 @@ export default function ShiftsScreen() {
         </Notice>
       ) : null}
 
-      <Field
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Buscar por institución, servicio o ciudad..."
-        autoCapitalize="none"
-        right={
-          <Ionicons
-            name="search-outline"
-            size={19}
-            color={colors.textSoft}
-          />
-        }
-      />
+      <Card style={styles.filterCard}>
+        <Field
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar por institución, servicio o ciudad..."
+          autoCapitalize="none"
+          left={
+            <Ionicons
+              name="search-outline"
+              size={18}
+              color={colors.textSoft}
+            />
+          }
+          right={
+            search ? (
+              <Pressable
+                onPress={() => setSearch("")}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Limpiar búsqueda"
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={colors.textSoft}
+                />
+              </Pressable>
+            ) : undefined
+          }
+        />
 
-      <View style={styles.chips}>
-        {cities.map((item) => {
-          const active = item === city;
-          return (
-            <Pressable
-              key={item}
-              onPress={() => setCity(item)}
-              style={[styles.chip, active && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {item}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+        {shifts.length > 0 ? (
+          <View style={styles.chips}>
+            {cities.map((item) => {
+              const active = item === city;
+              return (
+                <Pressable
+                  key={item}
+                  onPress={() => setCity(item)}
+                  style={[styles.chip, active && styles.chipActive]}
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipTextActive]}
+                  >
+                    {item}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </Card>
 
       {error ? (
         <Notice tone="danger" icon="alert-circle-outline">
@@ -129,11 +152,22 @@ export default function ShiftsScreen() {
       ) : visibleShifts.length === 0 ? (
         <EmptyState
           icon="calendar-outline"
-          title="No encontramos turnos"
+          title={
+            shifts.length === 0 ? "Aún no hay turnos" : "Sin coincidencias"
+          }
           description={
             shifts.length === 0
-              ? "Cuando una institución verificada publique un turno, aparecerá aquí."
+              ? "Las instituciones verificadas publicarán sus oportunidades aquí. Vuelve pronto o revisa tu perfil mientras tanto."
               : "Prueba con otra ciudad o cambia el término de búsqueda."
+          }
+          action={
+            profile?.role === "institution" && shifts.length === 0 ? (
+              <Button
+                label="Publicar un turno"
+                icon="add-circle-outline"
+                onPress={() => router.push("/(tabs)/institution")}
+              />
+            ) : undefined
           }
         />
       ) : (
@@ -172,9 +206,16 @@ function ShiftCard({
           <Text style={styles.institution} numberOfLines={1}>
             {shift.institution?.name ?? "Institución de salud"}
           </Text>
-          <Text style={styles.city}>
-            <Ionicons name="location-outline" size={12} /> {shift.city}
-          </Text>
+          <View style={styles.cityRow}>
+            <Ionicons
+              name="location-outline"
+              size={11}
+              color={colors.textSoft}
+            />
+            <Text style={styles.city} numberOfLines={1}>
+              {shift.city}
+            </Text>
+          </View>
         </View>
         <Badge
           label={shift.fulfillment_mode === "managed" ? "Gestionado" : "Directo"}
@@ -183,18 +224,28 @@ function ShiftCard({
       </View>
 
       <Text style={styles.shiftTitle}>{shift.title}</Text>
-      <Text style={styles.service}>{shift.service}</Text>
+
+      <View style={styles.servicePill}>
+        <Ionicons name="medkit-outline" size={12} color={colors.primaryDark} />
+        <Text style={styles.service}>{shift.service}</Text>
+      </View>
 
       <View style={styles.metaRow}>
-        <View style={styles.meta}>
-          <Ionicons name="calendar-outline" size={15} color={colors.textMuted} />
-          <Text style={styles.metaText}>{formatDate(shift.starts_at)}</Text>
+        <View style={styles.metaTile}>
+          <Ionicons name="calendar-outline" size={15} color={colors.primary} />
+          <View style={styles.metaTextWrap}>
+            <Text style={styles.metaLabel}>Fecha</Text>
+            <Text style={styles.metaText}>{formatDate(shift.starts_at)}</Text>
+          </View>
         </View>
-        <View style={styles.meta}>
-          <Ionicons name="time-outline" size={15} color={colors.textMuted} />
-          <Text style={styles.metaText}>
-            {formatTime(shift.starts_at)} – {formatTime(shift.ends_at)}
-          </Text>
+        <View style={styles.metaTile}>
+          <Ionicons name="time-outline" size={15} color={colors.primary} />
+          <View style={styles.metaTextWrap}>
+            <Text style={styles.metaLabel}>Horario</Text>
+            <Text style={styles.metaText}>
+              {formatTime(shift.starts_at)} – {formatTime(shift.ends_at)}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -205,11 +256,13 @@ function ShiftCard({
         </View>
         <View style={styles.detailLink}>
           <Text style={styles.detailText}>Ver detalle</Text>
-          <Ionicons
-            name="arrow-forward-outline"
-            size={16}
-            color={colors.primary}
-          />
+          <View style={styles.detailArrow}>
+            <Ionicons
+              name="arrow-forward-outline"
+              size={14}
+              color={colors.primaryDark}
+            />
+          </View>
         </View>
       </View>
     </Card>
@@ -217,54 +270,89 @@ function ShiftCard({
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  filterCard: { gap: spacing.md, padding: spacing.md },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "transparent",
   },
   chipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
   },
-  chipText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
-  chipTextActive: { color: colors.white },
+  chipText: { fontSize: 11.5, fontWeight: "700", color: colors.textMuted },
+  chipTextActive: { color: colors.primaryDark },
   list: { gap: spacing.md },
-  card: { gap: spacing.sm },
+  card: { gap: 9, padding: 17 },
   cardTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: 9,
   },
   institutionIcon: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   cardTopText: { flex: 1 },
-  institution: { fontSize: 14, fontWeight: "800", color: colors.navy },
-  city: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  shiftTitle: {
-    fontSize: 17,
+  institution: {
+    fontSize: 13,
     fontWeight: "800",
     color: colors.navy,
-    marginTop: spacing.xs,
+    letterSpacing: -0.1,
   },
-  service: { color: colors.primary, fontSize: 12, fontWeight: "700" },
+  cityRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
+  city: { fontSize: 10.5, color: colors.textSoft },
+  shiftTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.35,
+    marginTop: 3,
+  },
+  servicePill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  service: { color: colors.primaryDark, fontSize: 10.5, fontWeight: "700" },
   metaRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    marginTop: spacing.xs,
+    gap: spacing.sm,
+    marginTop: 3,
   },
-  meta: { flexDirection: "row", alignItems: "center", gap: 5 },
-  metaText: { fontSize: 11, color: colors.textMuted },
+  metaTile: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 11,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+  },
+  metaTextWrap: { flex: 1, gap: 1 },
+  metaLabel: {
+    fontSize: 8.5,
+    fontWeight: "800",
+    color: colors.textSoft,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  metaText: { fontSize: 10.5, color: colors.text, fontWeight: "600" },
   cardFooter: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -272,10 +360,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: 3,
   },
-  payLabel: { fontSize: 10, color: colors.textSoft, fontWeight: "700" },
-  pay: { fontSize: 18, fontWeight: "800", color: colors.primaryDark },
-  detailLink: { flexDirection: "row", alignItems: "center", gap: 4 },
-  detailText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
+  payLabel: {
+    fontSize: 9.5,
+    color: colors.textSoft,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  pay: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: colors.primaryDark,
+    letterSpacing: -0.4,
+    marginTop: 1,
+  },
+  detailLink: { flexDirection: "row", alignItems: "center", gap: 7 },
+  detailText: { color: colors.primaryDark, fontSize: 11.5, fontWeight: "800" },
+  detailArrow: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

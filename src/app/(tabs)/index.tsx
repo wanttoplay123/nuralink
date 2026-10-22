@@ -18,7 +18,7 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { formatRelative, roleLabel } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
-import { colors, radius, spacing } from "@/lib/theme";
+import { colors, gradients, radius, shadow, spacing } from "@/lib/theme";
 import type {
   AdminData,
   Application,
@@ -168,11 +168,14 @@ export default function HomeScreen() {
     <Screen refreshing={loading} onRefresh={load}>
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text style={styles.hello}>Hola, {firstName(profile.full_name)}</Text>
+          <Text style={styles.hello}>
+            Hola, {firstName(profile.full_name)}
+          </Text>
           <Text style={styles.role}>{roleLabel(profile.role)}</Text>
         </View>
-        <View style={styles.headerRight}>
-          <Avatar name={profile.full_name || "NURSELINK"} size={46} />
+        <View style={styles.avatarWrap}>
+          <Avatar name={profile.full_name || "NURSELINK"} size={48} />
+          <View style={styles.avatarStatus} />
         </View>
       </View>
 
@@ -183,17 +186,21 @@ export default function HomeScreen() {
       ) : null}
 
       <LinearGradient
-        colors={["#FFFFFF", "#EDF7F5"]}
+        colors={gradients.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}
       >
+        <View pointerEvents="none" style={styles.heroOrb} />
+        <View pointerEvents="none" style={styles.heroOrbSmall} />
         <Text style={styles.heroEyebrow}>{hero.eyebrow}</Text>
         <Text style={styles.heroTitle}>{hero.title}</Text>
         <Text style={styles.heroBody}>{hero.body}</Text>
         <Button
           label={hero.cta}
           onPress={() => router.push(hero.ctaRoute)}
+          variant="light"
+          icon="arrow-forward-outline"
           style={styles.heroButton}
         />
       </LinearGradient>
@@ -245,17 +252,24 @@ export default function HomeScreen() {
         </Card>
       )}
 
-      <Card style={styles.statsCard}>
-        {stats.map((stat, index) => (
-          <View key={stat.label} style={styles.statWrap}>
-            {index > 0 ? <View style={styles.statDivider} /> : null}
-            <View style={styles.stat}>
+      <View style={styles.statsRow}>
+        {stats.map((stat, index) => {
+          const visual = statVisual(index);
+          return (
+            <View key={stat.label} style={styles.statCard}>
+              <View style={[styles.statIcon, { backgroundColor: visual.bg }]}>
+                <Ionicons
+                  name={statIcon(profile.role, index)}
+                  size={16}
+                  color={visual.color}
+                />
+              </View>
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
-          </View>
-        ))}
-      </Card>
+          );
+        })}
+      </View>
 
       <View style={styles.section}>
         <SectionTitle title="Accesos rápidos" />
@@ -273,41 +287,65 @@ export default function HomeScreen() {
         <SectionTitle
           title="Actividad reciente"
           subtitle={
-            unread.length > 0
-              ? `${unread.length} sin leer`
-              : "Estás al día."
+            unread.length > 0 ? `${unread.length} sin leer` : "Estás al día."
           }
         />
         {loading && notifications.length === 0 ? (
           <LoadingBlock label="Cargando actividad..." />
         ) : notifications.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Aquí verás las novedades de tus turnos y postulaciones.
-          </Text>
-        ) : (
-          notifications.slice(0, 4).map((notification) => (
-            <Pressable
-              key={notification.id}
-              onPress={() => void markRead(notification)}
-              style={styles.notification}
-            >
-              <View
-                style={[
-                  styles.notificationDot,
-                  notification.read_at && styles.notificationDotRead,
-                ]}
+          <Card style={styles.activityEmpty}>
+            <View style={styles.activityEmptyIcon}>
+              <Ionicons
+                name="checkmark-done-outline"
+                size={21}
+                color={colors.success}
               />
-              <View style={styles.notificationBody}>
-                <Text style={styles.notificationTitle}>
-                  {notification.title}
-                </Text>
-                <Text style={styles.notificationText}>{notification.body}</Text>
-                <Text style={styles.notificationTime}>
-                  {formatRelative(notification.created_at)}
-                </Text>
+            </View>
+            <View style={styles.activityEmptyText}>
+              <Text style={styles.activityEmptyTitle}>Sin novedades</Text>
+              <Text style={styles.activityEmptyBody}>
+                Aquí verás lo nuevo de tus turnos y postulaciones.
+              </Text>
+            </View>
+          </Card>
+        ) : (
+          <Card style={styles.notificationCard}>
+            {notifications.slice(0, 4).map((notification, index) => (
+              <View key={notification.id}>
+                {index > 0 ? <Divider /> : null}
+                <Pressable
+                  onPress={() => void markRead(notification)}
+                  style={({ pressed }) => [
+                    styles.notificationRow,
+                    !notification.read_at && styles.notificationRowUnread,
+                    pressed && styles.notificationRowPressed,
+                  ]}
+                >
+                  <View style={styles.notificationIcon}>
+                    <Ionicons
+                      name="notifications-outline"
+                      size={17}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={styles.notificationBody}>
+                    <Text style={styles.notificationTitle}>
+                      {notification.title}
+                    </Text>
+                    <Text style={styles.notificationText}>
+                      {notification.body}
+                    </Text>
+                    <Text style={styles.notificationTime}>
+                      {formatRelative(notification.created_at)}
+                    </Text>
+                  </View>
+                  {!notification.read_at ? (
+                    <View style={styles.notificationDot} />
+                  ) : null}
+                </Pressable>
               </View>
-            </Pressable>
-          ))
+            ))}
+          </Card>
         )}
       </View>
     </Screen>
@@ -458,9 +496,48 @@ function ActionRow({
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward-outline" size={18} color={colors.textSoft} />
+      <View style={styles.chevron}>
+        <Ionicons
+          name="chevron-forward-outline"
+          size={15}
+          color={colors.textMuted}
+        />
+      </View>
     </Pressable>
   );
+}
+
+function statIcon(
+  role: "nurse" | "institution" | "admin",
+  index: number
+): keyof typeof Ionicons.glyphMap {
+  const icons = {
+    nurse: [
+      "document-text-outline",
+      "checkmark-circle-outline",
+      "mail-unread-outline",
+    ],
+    institution: [
+      "calendar-outline",
+      "layers-outline",
+      "mail-unread-outline",
+    ],
+    admin: [
+      "business-outline",
+      "shield-checkmark-outline",
+      "mail-unread-outline",
+    ],
+  } as const;
+  return icons[role][index] ?? "ellipse-outline";
+}
+
+function statVisual(index: number): { bg: string; color: string } {
+  const visuals = [
+    { bg: colors.primarySoft, color: colors.primary },
+    { bg: colors.infoSoft, color: colors.info },
+    { bg: colors.accentSoft, color: colors.accent },
+  ];
+  return visuals[index] ?? visuals[0];
 }
 
 const styles = StyleSheet.create({
@@ -472,30 +549,75 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   headerText: { flex: 1 },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  hello: { fontSize: 24, fontWeight: "700", color: colors.navy },
-  role: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  avatarWrap: { position: "relative" },
+  avatarStatus: {
+    position: "absolute",
+    right: 0,
+    bottom: 1,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: colors.success,
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  hello: {
+    fontSize: 25,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.65,
+  },
+  role: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
   hero: {
     borderRadius: radius.xl,
     padding: spacing.xl,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    gap: 7,
+    overflow: "hidden",
+    ...shadow,
+  },
+  heroOrb: {
+    position: "absolute",
+    top: -74,
+    right: -58,
+    width: 205,
+    height: 205,
+    borderRadius: 103,
+    backgroundColor: "rgba(143, 227, 212, 0.1)",
+  },
+  heroOrbSmall: {
+    position: "absolute",
+    bottom: -88,
+    left: -52,
+    width: 165,
+    height: 165,
+    borderRadius: 83,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
   },
   heroEyebrow: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.4,
+    color: "#8FE3D4",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.6,
   },
   heroTitle: {
-    color: colors.navy,
-    fontSize: 24,
-    lineHeight: 31,
-    fontWeight: "700",
+    color: colors.white,
+    fontSize: 25,
+    lineHeight: 32,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    maxWidth: "94%",
   },
-  heroBody: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
-  heroButton: { alignSelf: "flex-start", paddingHorizontal: 24 },
+  heroBody: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 13,
+    lineHeight: 19.5,
+    maxWidth: "90%",
+  },
+  heroButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 20,
+    marginTop: 9,
+  },
   statusCard: { gap: spacing.sm },
   statusHeader: {
     flexDirection: "row",
@@ -504,69 +626,149 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   statusText: { flex: 1 },
-  statusName: { fontSize: 15, fontWeight: "700", color: colors.navy },
-  statusCity: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  statusHint: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
-  statsCard: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
+  statusName: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.15,
   },
-  statWrap: { flex: 1, flexDirection: "row", alignItems: "stretch" },
-  statDivider: {
-    width: 1,
-    backgroundColor: colors.border,
-    marginRight: spacing.md,
+  statusCity: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
+  statusHint: { fontSize: 11.5, color: colors.textMuted, lineHeight: 17 },
+  statsRow: { flexDirection: "row", gap: spacing.sm },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    gap: 4,
+    minHeight: 124,
+    ...shadow,
   },
-  stat: { flex: 1, alignItems: "center", gap: 3 },
-  statValue: { fontSize: 24, fontWeight: "700", color: colors.navy },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.7,
+    lineHeight: 28,
+  },
   statLabel: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.textMuted,
-    textAlign: "center",
     lineHeight: 14,
   },
-  section: { gap: spacing.md },
-  actionCard: { padding: spacing.xs },
+  section: { gap: 10 },
+  actionCard: { padding: 6 },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   actionText: { flex: 1 },
-  actionTitle: { fontSize: 14, fontWeight: "700", color: colors.navy },
-  actionSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
-  notification: {
+  actionTitle: {
+    fontSize: 13.5,
+    fontWeight: "700",
+    color: colors.navy,
+    letterSpacing: -0.1,
+  },
+  actionSubtitle: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  chevron: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationCard: { padding: 6 },
+  notificationRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    gap: 10,
+    padding: 10,
+    borderRadius: 14,
+  },
+  notificationRowUnread: { backgroundColor: "#F4FBF8" },
+  notificationRowPressed: { opacity: 0.7 },
+  notificationIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
   },
   notificationDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: colors.primary,
-    marginTop: 5,
+    marginTop: 6,
   },
-  notificationDotRead: { backgroundColor: colors.borderStrong },
   notificationBody: { flex: 1, gap: 2 },
-  notificationTitle: { fontSize: 13, fontWeight: "700", color: colors.navy },
-  notificationText: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
-  notificationTime: { fontSize: 10, color: colors.textSoft, marginTop: 2 },
-  emptyText: { color: colors.textMuted, fontSize: 13, lineHeight: 19 },
+  notificationTitle: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: colors.navy,
+  },
+  notificationText: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    lineHeight: 16.5,
+  },
+  notificationTime: {
+    fontSize: 9.5,
+    color: colors.textSoft,
+    marginTop: 2,
+  },
+  activityEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: spacing.md,
+  },
+  activityEmptyIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.successSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activityEmptyText: { flex: 1, gap: 2 },
+  activityEmptyTitle: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: colors.navy,
+  },
+  activityEmptyBody: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    lineHeight: 16.5,
+  },
 });

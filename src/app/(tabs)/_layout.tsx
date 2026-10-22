@@ -7,6 +7,22 @@ import { Logo } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 import { colors } from "@/lib/theme";
 
+function TabIcon({
+  name,
+  color,
+  focused,
+}: {
+  name: keyof typeof Ionicons.glyphMap;
+  color: string;
+  focused: boolean;
+}) {
+  return (
+    <View style={[styles.tabIcon, focused && styles.tabIconActive]}>
+      <Ionicons name={name} size={20} color={color} />
+    </View>
+  );
+}
+
 export default function TabsLayout() {
   const { loading, profile, api } = useApp();
   const [unread, setUnread] = useState(0);
@@ -66,21 +82,37 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryDark,
         tabBarInactiveTintColor: colors.textSoft,
+        tabBarAllowFontScaling: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 66,
-          paddingTop: 6,
-          paddingBottom: 8,
-          shadowColor: "#0A2A33",
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: -3 },
-          elevation: 8,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderColor: colors.border,
+          borderTopLeftRadius: 18,
+          borderTopRightRadius: 18,
+          height: 74,
+          paddingTop: 7,
+          paddingBottom: 9,
+          width: "100%",
+          maxWidth: 820,
+          alignSelf: "center",
+          shadowColor: "#092D2B",
+          shadowOpacity: 0.07,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: -6 },
+          elevation: 10,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
+        tabBarItemStyle: { paddingVertical: 2 },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "700",
+          letterSpacing: 0.05,
+          marginTop: 1,
+        },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
@@ -89,10 +121,10 @@ export default function TabsLayout() {
         options={{
           title: "Inicio",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "home" : "home-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -102,10 +134,10 @@ export default function TabsLayout() {
         options={{
           title: "Turnos",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "calendar" : "calendar-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -116,10 +148,10 @@ export default function TabsLayout() {
           title: "Postulaciones",
           href: isNurse ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "document-text" : "document-text-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -133,13 +165,14 @@ export default function TabsLayout() {
           tabBarBadgeStyle: {
             backgroundColor: colors.danger,
             color: colors.white,
-            fontSize: 11,
+            fontSize: 9,
+            fontWeight: "700",
           },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "chatbubbles" : "chatbubbles-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -150,10 +183,10 @@ export default function TabsLayout() {
           title: "Institución",
           href: isInstitution ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "business" : "business-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -164,10 +197,10 @@ export default function TabsLayout() {
           title: "Admin",
           href: isAdmin ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "shield-checkmark" : "shield-checkmark-outline"}
-              size={22}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -177,10 +210,10 @@ export default function TabsLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
+            <TabIcon
               name={focused ? "person-circle" : "person-circle-outline"}
-              size={23}
-              color={typeof color === "string" ? color : colors.primary}
+              color={typeof color === "string" ? color : colors.primaryDark}
+              focused={focused}
             />
           ),
         }}
@@ -197,4 +230,12 @@ const styles = StyleSheet.create({
     gap: 20,
     backgroundColor: colors.background,
   },
+  tabIcon: {
+    width: 38,
+    height: 27,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabIconActive: { backgroundColor: colors.primarySoft },
 });

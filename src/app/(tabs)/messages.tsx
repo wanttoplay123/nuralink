@@ -15,7 +15,7 @@ import {
 } from "@/components/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { formatRelative } from "@/lib/format";
-import { colors, radius, spacing } from "@/lib/theme";
+import { colors, spacing } from "@/lib/theme";
 import type { Conversation } from "@/types";
 
 export default function MessagesScreen() {
@@ -50,25 +50,8 @@ export default function MessagesScreen() {
 
   return (
     <Screen refreshing={loading} onRefresh={load}>
-      <View style={styles.topNavRow}>
-        <Button
-          label="Volver a Inicio"
-          icon="arrow-back-outline"
-          variant="light"
-          small
-          onPress={() => router.navigate("/(tabs)")}
-        />
-        <Button
-          label="Ver Turnos"
-          icon="calendar-outline"
-          variant="secondary"
-          small
-          onPress={() => router.navigate("/(tabs)/shifts")}
-        />
-      </View>
-
       <ScreenHeader
-        eyebrow="MENSAJES"
+        eyebrow="COMUNICACIÓN"
         title="Conversaciones"
         subtitle="Coordina los detalles de los turnos aceptados."
       />
@@ -85,7 +68,15 @@ export default function MessagesScreen() {
         <EmptyState
           icon="chatbubbles-outline"
           title="Aún no tienes conversaciones"
-          description="El chat se abre cuando una institución acepta una postulación."
+          description="El chat se abre cuando una institución acepta una postulación. Mientras tanto, explora los turnos disponibles."
+          action={
+            <Button
+              label="Explorar turnos"
+              variant="secondary"
+              icon="calendar-outline"
+              onPress={() => router.push("/(tabs)/shifts")}
+            />
+          }
         />
       ) : (
         conversations.map((conversation) => {
@@ -148,35 +139,35 @@ export default function MessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.sm },
+  card: { gap: 10, padding: 16 },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
   },
   cardText: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: "800", color: colors.navy },
-  cardShift: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  cardMeta: { alignItems: "flex-end", gap: 3 },
+  cardTitle: {
+    fontSize: 14.5,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.15,
+  },
+  cardShift: { fontSize: 10.5, color: colors.textMuted, marginTop: 2 },
+  cardMeta: { alignItems: "flex-end", gap: 4 },
   cardTime: { fontSize: 9, color: colors.textSoft },
   previewRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.sm,
-    backgroundColor: colors.background,
-    borderRadius: radius.sm,
-    padding: spacing.sm,
+    gap: 7,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   preview: {
     flex: 1,
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  topNavRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    fontSize: 11.5,
+    lineHeight: 16.5,
   },
 });

@@ -174,6 +174,14 @@ export default function ChatScreen() {
       <Stack.Screen
         options={{
           title: peerName ?? "Chat",
+          headerStyle: { backgroundColor: colors.surface },
+          headerShadowVisible: false,
+          headerTintColor: colors.navy,
+          headerTitleStyle: {
+            fontSize: 15,
+            fontWeight: "800",
+            color: colors.navy,
+          },
           headerLeft: () => (
             <Pressable
               onPress={() => router.back()}
@@ -187,31 +195,6 @@ export default function ChatScreen() {
           ),
         }}
       />
-      <View style={styles.chatNavBanner}>
-        <Pressable
-          style={styles.chatNavAction}
-          onPress={() => router.navigate("/(tabs)/messages")}
-        >
-          <Ionicons name="chatbubbles-outline" size={16} color={colors.primary} />
-          <Text style={styles.chatNavActionText}>Bandeja</Text>
-        </Pressable>
-        {conversation?.shift ? (
-          <Pressable
-            style={styles.chatNavAction}
-            onPress={() => router.push(`/shift/${conversation.shift?.id}`)}
-          >
-            <Ionicons name="calendar-outline" size={16} color={colors.primary} />
-            <Text style={styles.chatNavActionText}>Detalles turno</Text>
-          </Pressable>
-        ) : null}
-        <Pressable
-          style={styles.chatNavAction}
-          onPress={() => router.navigate("/(tabs)")}
-        >
-          <Ionicons name="home-outline" size={16} color={colors.primary} />
-          <Text style={styles.chatNavActionText}>Inicio</Text>
-        </Pressable>
-      </View>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -227,7 +210,17 @@ export default function ChatScreen() {
             listRef.current?.scrollToEnd({ animated: false })
           }
           ListHeaderComponent={
-            <View style={styles.context}>
+            <Pressable
+              onPress={
+                conversation.shift
+                  ? () => router.push(`/shift/${conversation.shift?.id}`)
+                  : undefined
+              }
+              style={({ pressed }) => [
+                styles.context,
+                pressed && conversation.shift && styles.contextPressed,
+              ]}
+            >
               <View style={styles.contextIcon}>
                 <Ionicons
                   name={
@@ -251,7 +244,16 @@ export default function ChatScreen() {
                     : "Turno aceptado"}
                 </Text>
               </View>
-            </View>
+              {conversation.shift ? (
+                <View style={styles.contextChevron}>
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={14}
+                    color={colors.primaryDark}
+                  />
+                </View>
+              ) : null}
+            </Pressable>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -370,20 +372,34 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    padding: 12,
     marginBottom: spacing.md,
   },
+  contextPressed: { opacity: 0.78 },
   contextIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   contextText: { flex: 1 },
-  contextName: { fontSize: 13, fontWeight: "800", color: colors.navy },
-  contextShift: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  contextName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.1,
+  },
+  contextShift: { fontSize: 10.5, color: colors.textMuted, marginTop: 2 },
+  contextChevron: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   empty: {
     alignItems: "center",
     gap: spacing.sm,
@@ -399,26 +415,26 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: "82%",
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    borderRadius: 18,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
     gap: 4,
   },
   bubbleMine: {
     alignSelf: "flex-end",
     backgroundColor: colors.primary,
-    borderBottomRightRadius: 5,
+    borderBottomRightRadius: 6,
   },
   bubbleOther: {
     alignSelf: "flex-start",
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderBottomLeftRadius: 5,
+    borderBottomLeftRadius: 6,
   },
   message: { fontSize: 13, lineHeight: 19, color: colors.text },
   messageMine: { color: colors.white },
-  time: { fontSize: 9, color: colors.textSoft },
+  time: { fontSize: 8.5, color: colors.textSoft },
   timeMine: { color: "rgba(255,255,255,0.72)" },
   bubbleFooter: {
     flexDirection: "row",
@@ -441,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
@@ -449,25 +465,30 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     maxHeight: 120,
-    minHeight: 44,
-    borderRadius: radius.md,
+    minHeight: 46,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
     color: colors.text,
-    fontSize: 14,
+    fontSize: 13.5,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.primary,
+    shadowColor: colors.primaryDark,
+    shadowOpacity: 0.22,
+    shadowRadius: 9,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  sendButtonDisabled: { opacity: 0.45 },
+  sendButtonDisabled: { opacity: 0.45, shadowOpacity: 0 },
   headerBackBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -476,33 +497,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   headerBackText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.navy,
-  },
-  chatNavBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    backgroundColor: colors.surface,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
-  },
-  chatNavAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primarySoft,
-  },
-  chatNavActionText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.primaryDark,
   },
 });

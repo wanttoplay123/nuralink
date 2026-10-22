@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "@/context/app";
@@ -21,7 +21,7 @@ import {
   formatTime,
   isFutureDate,
 } from "@/lib/format";
-import { colors, spacing } from "@/lib/theme";
+import { colors, radius, spacing } from "@/lib/theme";
 import type {
   Application,
   NurseCredentials,
@@ -97,7 +97,7 @@ export default function ShiftDetailScreen() {
 
   if (loading) {
     return (
-      <Screen edges={["bottom", "left", "right"]}>
+      <Screen edges={["top", "bottom", "left", "right"]}>
         <LoadingBlock label="Cargando turno..." />
       </Screen>
     );
@@ -105,7 +105,7 @@ export default function ShiftDetailScreen() {
 
   if (!shift) {
     return (
-      <Screen edges={["bottom", "left", "right"]}>
+      <Screen edges={["top", "bottom", "left", "right"]}>
         <Notice tone="danger" icon="alert-circle-outline">
           {error || "No encontramos este turno."}
         </Notice>
@@ -123,25 +123,26 @@ export default function ShiftDetailScreen() {
 
   return (
     <Screen
-      edges={["bottom", "left", "right"]}
+      edges={["top", "bottom", "left", "right"]}
       contentStyle={styles.content}
     >
-      <View style={styles.topNavRow}>
-        <Button
-          label="Volver a Turnos"
-          icon="arrow-back-outline"
-          variant="light"
-          small
-          onPress={() => router.navigate("/(tabs)/shifts")}
-        />
-        <Button
-          label="Inicio"
-          icon="home-outline"
-          variant="secondary"
-          small
-          onPress={() => router.navigate("/(tabs)")}
-        />
-      </View>
+      <Pressable
+        onPress={() => router.navigate("/(tabs)/shifts")}
+        style={({ pressed }) => [
+          styles.backLink,
+          pressed && styles.backLinkPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <View style={styles.backIcon}>
+          <Ionicons
+            name="chevron-back-outline"
+            size={16}
+            color={colors.primaryDark}
+          />
+        </View>
+        <Text style={styles.backText}>Volver a turnos</Text>
+      </Pressable>
 
       <Card style={styles.headerCard}>
         <View style={styles.institutionRow}>
@@ -156,9 +157,14 @@ export default function ShiftDetailScreen() {
             <Text style={styles.institutionName}>
               {shift.institution?.name ?? "Institución de salud"}
             </Text>
-            <Text style={styles.city}>
-              <Ionicons name="location-outline" size={12} /> {shift.city}
-            </Text>
+            <View style={styles.cityRow}>
+              <Ionicons
+                name="location-outline"
+                size={11}
+                color={colors.textSoft}
+              />
+              <Text style={styles.city}>{shift.city}</Text>
+            </View>
           </View>
           <ShiftStatusBadge status={shift.status} />
         </View>
@@ -176,8 +182,10 @@ export default function ShiftDetailScreen() {
           />
         </View>
 
-        <Text style={styles.pay}>{formatCurrency(shift.payment_amount)}</Text>
-        <Text style={styles.payCaption}>Remuneración estimada del turno</Text>
+        <View style={styles.payBlock}>
+          <Text style={styles.payCaption}>Remuneración estimada</Text>
+          <Text style={styles.pay}>{formatCurrency(shift.payment_amount)}</Text>
+        </View>
       </Card>
 
       <Card style={styles.infoCard}>
@@ -314,8 +322,25 @@ function InfoRow({
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.md },
-  headerCard: { gap: spacing.sm },
+  content: { gap: 14 },
+  backLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 7,
+    paddingVertical: 2,
+  },
+  backLinkPressed: { opacity: 0.6 },
+  backIcon: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backText: { color: colors.primaryDark, fontSize: 12, fontWeight: "800" },
+  headerCard: { gap: 10, padding: 17 },
   institutionRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -330,39 +355,79 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   institutionText: { flex: 1 },
-  institutionName: { fontSize: 14, fontWeight: "800", color: colors.navy },
-  city: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  title: {
-    fontSize: 24,
-    lineHeight: 30,
+  institutionName: {
+    fontSize: 13,
     fontWeight: "800",
     color: colors.navy,
-    marginTop: spacing.sm,
+    letterSpacing: -0.1,
   },
-  badges: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  cityRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
+  city: { fontSize: 10.5, color: colors.textSoft },
+  title: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.55,
+    marginTop: 4,
+  },
+  badges: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  payBlock: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 6,
+    alignSelf: "flex-start",
+    minWidth: 180,
+  },
+  payCaption: {
+    fontSize: 9.5,
+    color: colors.primaryDark,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
   pay: {
-    fontSize: 27,
+    fontSize: 25,
     fontWeight: "800",
     color: colors.primaryDark,
-    marginTop: spacing.sm,
+    letterSpacing: -0.6,
+    marginTop: 1,
   },
-  payCaption: { fontSize: 11, color: colors.textSoft },
-  infoCard: { gap: spacing.md },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  infoCard: { gap: 10, padding: 15 },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   infoIcon: {
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   infoText: { flex: 1 },
-  infoLabel: { fontSize: 10, color: colors.textSoft, fontWeight: "700" },
-  infoValue: { fontSize: 13, color: colors.text, fontWeight: "600", marginTop: 2 },
+  infoLabel: {
+    fontSize: 9.5,
+    color: colors.textSoft,
+    fontWeight: "800",
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  },
+  infoValue: {
+    fontSize: 12.5,
+    color: colors.text,
+    fontWeight: "600",
+    marginTop: 2,
+    lineHeight: 17,
+  },
   requirements: { gap: spacing.sm },
-  sectionLabel: { fontSize: 15, fontWeight: "800", color: colors.navy },
-  requirementsText: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.2,
+  },
+  requirementsText: { color: colors.textMuted, fontSize: 12.5, lineHeight: 19 },
   appliedCard: { gap: spacing.md },
   appliedHeader: {
     flexDirection: "row",
@@ -371,13 +436,7 @@ const styles = StyleSheet.create({
   },
   appliedText: { flex: 1 },
   appliedTitle: { fontSize: 14, fontWeight: "800", color: colors.navy },
-  appliedBody: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  appliedBody: { fontSize: 11.5, color: colors.textMuted, marginTop: 2 },
   applyCard: { gap: spacing.md },
-  applyHint: { fontSize: 12, color: colors.textMuted, lineHeight: 18 },
-  topNavRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
+  applyHint: { fontSize: 11.5, color: colors.textMuted, lineHeight: 17.5 },
 });

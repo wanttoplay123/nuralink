@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, gradients, radius, shadow, spacing } from "@/lib/theme";
+import {
+  colors,
+  gradients,
+  radius,
+  shadow,
+  shadowLifted,
+  spacing,
+} from "@/lib/theme";
 import { initials, verificationLabel } from "@/lib/format";
 import type {
   ApplicationStatus,
@@ -25,24 +32,50 @@ import type {
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo({
+  compact = false,
+  light = false,
+}: {
+  compact?: boolean;
+  light?: boolean;
+}) {
   return (
-    <View style={styles.logoRow}>
+    <View style={styles.logoRow} accessibilityLabel="NURSELINK">
       <LinearGradient
         colors={gradients.primary}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.logoMark, compact && styles.logoMarkSmall]}
       >
-        <Text style={[styles.logoCross, compact && styles.logoCrossSmall]}>
-          +
-        </Text>
+        <View style={styles.logoMarkInner}>
+          <Text style={[styles.logoCross, compact && styles.logoCrossSmall]}>
+            +
+          </Text>
+        </View>
       </LinearGradient>
       <View>
-        <Text style={[styles.logoText, compact && styles.logoTextSmall]}>
-          NURSELINK
+        <Text
+          style={[
+            styles.logoText,
+            light && styles.logoTextLight,
+            compact && styles.logoTextSmall,
+          ]}
+        >
+          {"NURSE"}
+          <Text
+            style={[
+              styles.logoTextAccent,
+              light && styles.logoTextAccentLight,
+            ]}
+          >
+            {"LINK"}
+          </Text>
         </Text>
-        {!compact && <Text style={styles.logoTagline}>Talento que cuida.</Text>}
+        {!compact && (
+          <Text style={[styles.logoTagline, light && styles.logoTaglineLight]}>
+            Talento que cuida.
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -139,6 +172,7 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
+        variant === "primary" && styles.buttonPrimary,
         variant === "secondary" && styles.buttonSecondary,
         variant === "ghost" && styles.buttonGhost,
         variant === "danger" && styles.buttonDanger,
@@ -341,6 +375,7 @@ type FieldProps = TextInputProps & {
   error?: string;
   hint?: string;
   required?: boolean;
+  left?: ReactNode;
   right?: ReactNode;
 };
 
@@ -349,11 +384,16 @@ export function Field({
   error,
   hint,
   required,
+  left,
   right,
   style,
   multiline,
+  onFocus,
+  onBlur,
   ...props
 }: FieldProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.field}>
       {label ? (
@@ -366,13 +406,33 @@ export function Field({
         style={[
           styles.inputWrap,
           multiline && styles.inputWrapMultiline,
+          focused && styles.inputWrapFocused,
           error && styles.inputWrapError,
         ]}
       >
+        {left ? (
+          <View
+            style={[
+              styles.fieldIcon,
+              multiline && styles.fieldIconMultiline,
+            ]}
+          >
+            {left}
+          </View>
+        ) : null}
         <TextInput
           {...props}
           multiline={multiline}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
           placeholderTextColor={colors.textSoft}
+          selectionColor={colors.primary}
           style={[
             styles.input,
             multiline && styles.inputMultiline,
@@ -436,11 +496,13 @@ export function Notice({
         { backgroundColor: selected.background, borderColor: selected.border },
       ]}
     >
-      <Ionicons
-        name={icon ?? "information-circle-outline"}
-        size={20}
-        color={selected.color}
-      />
+      <View style={styles.noticeIcon}>
+        <Ionicons
+          name={icon ?? "information-circle-outline"}
+          size={18}
+          color={selected.color}
+        />
+      </View>
       <View style={styles.noticeBody}>
         {title ? (
           <Text style={[styles.noticeTitle, { color: selected.color }]}>
@@ -472,8 +534,11 @@ export function EmptyState({
 }) {
   return (
     <View style={styles.empty}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name={icon} size={30} color={colors.primary} />
+      <View style={styles.emptyHalo} />
+      <View style={styles.emptyIconOuter}>
+        <View style={styles.emptyIcon}>
+          <Ionicons name={icon} size={28} color={colors.primary} />
+        </View>
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyDescription}>{description}</Text>
@@ -490,16 +555,19 @@ export function Avatar({
   size?: number;
 }) {
   return (
-    <View
+    <LinearGradient
+      colors={gradients.primary}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={[
         styles.avatar,
         { width: size, height: size, borderRadius: size / 2 },
       ]}
     >
-      <Text style={[styles.avatarText, { fontSize: size * 0.36 }]}>
+      <Text style={[styles.avatarText, { fontSize: size * 0.34 }]}>
         {initials(name)}
       </Text>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -532,31 +600,60 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   screenScroll: { flex: 1 },
   screenContent: {
-    padding: spacing.xl,
+    width: "100%",
+    maxWidth: 820,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
   },
   screenFill: { flex: 1 },
-  logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  logoRow: { flexDirection: "row", alignItems: "center", gap: 11 },
   logoMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    padding: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow,
+  },
+  logoMarkSmall: { width: 36, height: 36, borderRadius: 12, padding: 3 },
+  logoMarkInner: {
+    flex: 1,
+    width: "100%",
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
     alignItems: "center",
     justifyContent: "center",
   },
-  logoMarkSmall: { width: 34, height: 34, borderRadius: 11 },
-  logoCross: { color: colors.white, fontSize: 30, fontWeight: "700", lineHeight: 34 },
-  logoCrossSmall: { fontSize: 23, lineHeight: 26 },
+  logoCross: {
+    color: colors.white,
+    fontSize: 27,
+    fontWeight: "400",
+    lineHeight: 30,
+  },
+  logoCrossSmall: { fontSize: 21, lineHeight: 23 },
   logoText: {
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: "800",
     color: colors.navy,
-    letterSpacing: 0.4,
+    letterSpacing: 1.1,
   },
-  logoTextSmall: { fontSize: 16 },
-  logoTagline: { color: colors.textMuted, fontSize: 12, marginTop: 1 },
+  logoTextLight: { color: colors.white },
+  logoTextAccent: { color: colors.primary },
+  logoTextAccentLight: { color: "#8FE3D4" },
+  logoTextSmall: { fontSize: 15, letterSpacing: 0.8 },
+  logoTagline: {
+    color: colors.textMuted,
+    fontSize: 10.5,
+    fontWeight: "600",
+    letterSpacing: 0.45,
+    marginTop: 1,
+  },
+  logoTaglineLight: { color: "rgba(255,255,255,0.62)" },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
@@ -564,12 +661,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 50,
+    minHeight: 52,
   },
+  buttonPrimary: { ...shadowLifted },
   buttonSecondary: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.borderStrong,
   },
   buttonGhost: { backgroundColor: "transparent", minHeight: 42 },
   buttonDanger: { backgroundColor: colors.dangerSoft },
@@ -581,11 +679,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
   },
-  buttonDisabled: { opacity: 0.5 },
-  buttonPressed: { opacity: 0.82 },
+  buttonDisabled: { opacity: 0.5, shadowOpacity: 0 },
+  buttonPressed: { opacity: 0.84, transform: [{ scale: 0.995 }] },
   buttonInner: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  buttonText: { fontSize: 15, fontWeight: "700" },
-  buttonTextSmall: { fontSize: 13 },
+  buttonText: {
+    fontSize: 14.5,
+    fontWeight: "700",
+    letterSpacing: 0.15,
+  },
+  buttonTextSmall: { fontSize: 12.5 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -594,7 +696,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadow,
   },
-  cardPressed: { opacity: 0.9 },
+  cardPressed: { opacity: 0.92, transform: [{ scale: 0.997 }] },
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -602,11 +704,16 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionTitleText: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "800", color: colors.navy },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: colors.navy,
+    letterSpacing: -0.2,
+  },
   sectionSubtitle: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12.5,
+    lineHeight: 18,
     marginTop: 3,
   },
   screenHeaderRow: {
@@ -618,21 +725,23 @@ const styles = StyleSheet.create({
   screenHeaderText: { flex: 1 },
   screenHeaderEyebrow: {
     color: colors.primary,
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "800",
-    letterSpacing: 1.4,
+    letterSpacing: 1.7,
   },
   screenHeaderTitle: {
-    fontSize: 26,
+    fontSize: 27,
+    lineHeight: 33,
     fontWeight: "800",
     color: colors.navy,
-    marginTop: 4,
+    letterSpacing: -0.55,
+    marginTop: 5,
   },
   screenHeaderSubtitle: {
     color: colors.textMuted,
     fontSize: 13,
-    lineHeight: 20,
-    marginTop: 4,
+    lineHeight: 19.5,
+    marginTop: 5,
   },
   badge: {
     flexDirection: "row",
@@ -643,76 +752,130 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignSelf: "flex-start",
   },
-  badgeText: { fontSize: 11, fontWeight: "700" },
+  badgeText: { fontSize: 10.5, fontWeight: "700", letterSpacing: 0.1 },
   field: { gap: 6 },
-  fieldLabel: { color: colors.navy, fontWeight: "700", fontSize: 13 },
+  fieldLabel: {
+    color: colors.navy,
+    fontWeight: "700",
+    fontSize: 12.5,
+    letterSpacing: 0.1,
+  },
   required: { color: colors.danger },
   inputWrap: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 50,
+    minHeight: 52,
+    gap: 9,
   },
-  inputWrapMultiline: { alignItems: "flex-start", paddingVertical: spacing.sm },
-  inputWrapError: { borderColor: colors.danger },
+  inputWrapMultiline: { alignItems: "flex-start", paddingVertical: 10 },
+  inputWrapFocused: {
+    borderColor: colors.primary,
+    backgroundColor: "#FBFEFD",
+    shadowColor: colors.primary,
+    shadowOpacity: 0.09,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  inputWrapError: { borderColor: colors.danger, backgroundColor: "#FFFBFA" },
+  fieldIcon: { alignItems: "center", justifyContent: "center" },
+  fieldIconMultiline: { paddingTop: 4 },
   input: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
-    paddingVertical: 12,
+    fontSize: 14.5,
+    paddingVertical: 13,
+    paddingHorizontal: 0,
   },
-  inputMultiline: { minHeight: 88, textAlignVertical: "top" },
-  fieldError: { color: colors.danger, fontSize: 12 },
-  fieldHint: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
+  inputMultiline: { minHeight: 88, textAlignVertical: "top", paddingTop: 3 },
+  fieldError: { color: colors.danger, fontSize: 11.5, lineHeight: 16 },
+  fieldHint: { color: colors.textMuted, fontSize: 11.5, lineHeight: 16 },
   notice: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.sm,
+    gap: 10,
     borderWidth: 1,
     borderRadius: radius.md,
-    padding: spacing.md,
+    padding: 13,
   },
-  noticeBody: { flex: 1, gap: 2 },
-  noticeTitle: { fontWeight: "800", fontSize: 13 },
-  noticeText: { fontSize: 13, lineHeight: 19 },
-  empty: {
-    alignItems: "center",
-    paddingVertical: 34,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: colors.primarySoft,
+  noticeIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.72)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: spacing.sm,
+  },
+  noticeBody: { flex: 1, gap: 2, paddingTop: 1 },
+  noticeTitle: { fontWeight: "800", fontSize: 12.5, letterSpacing: 0.05 },
+  noticeText: { fontSize: 12.5, lineHeight: 18.5 },
+  empty: {
+    alignItems: "center",
+    paddingVertical: 28,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    overflow: "hidden",
+    ...shadow,
+  },
+  emptyHalo: {
+    position: "absolute",
+    top: -112,
+    right: -66,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: colors.primarySoft,
+    opacity: 0.62,
+  },
+  emptyIconOuter: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 16.5,
     fontWeight: "800",
     color: colors.navy,
     textAlign: "center",
+    letterSpacing: -0.2,
   },
   emptyDescription: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12.5,
     lineHeight: 19,
     textAlign: "center",
+    maxWidth: 330,
   },
   emptyAction: { marginTop: spacing.sm, alignSelf: "stretch" },
   avatar: {
-    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.82)",
   },
-  avatarText: { color: colors.primaryDark, fontWeight: "800" },
+  avatarText: { color: colors.white, fontWeight: "800", letterSpacing: 0.3 },
   row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap" },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   loadingBlock: {
@@ -720,5 +883,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
-  loadingText: { color: colors.textMuted, fontSize: 13 },
+  loadingText: { color: colors.textMuted, fontSize: 12.5 },
 });

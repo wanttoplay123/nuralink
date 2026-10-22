@@ -19,16 +19,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="sign-in" />
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="shift/[id]"
-            options={{
-              headerShown: true,
-              title: "Detalle del turno",
-              headerStyle: { backgroundColor: colors.surface },
-              headerTintColor: colors.navy,
-              headerTitleStyle: { fontWeight: "800" },
-            }}
-          />
+          <Stack.Screen name="shift/[id]" />
           <Stack.Screen
             name="chat/[id]"
             options={{
