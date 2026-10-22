@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { router } from "expo-router";
 import { requireSupabase, supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/types";
 import type { AppApi } from "@/services/api";
@@ -80,8 +81,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setTimeout(() => router.replace("/reset-password"), 0);
+      }
       setSession(nextSession);
       if (nextSession?.user) {
         void applySessionProfile();
