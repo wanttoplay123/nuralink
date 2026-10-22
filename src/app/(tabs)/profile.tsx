@@ -1,5 +1,12 @@
 import { useCallback, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,6 +25,10 @@ import {
 } from "@/components/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { confirm } from "@/lib/confirm";
+import {
+  openDocumentUrl,
+  prepareDocumentWindow,
+} from "@/lib/documentPreview";
 import {
   professionalTypeLabel,
   roleLabel,
@@ -40,6 +51,7 @@ export default function ProfileScreen() {
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [documents, setDocuments] = useState<CredentialDocument[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [professionalType, setProfessionalType] =
     useState<ProfessionalType>("nurse");
@@ -70,7 +82,6 @@ export default function ProfileScreen() {
         ]);
         setCredentials(nextCredentials);
         setInstitution(nextInstitution);
-        api.getMyDocuments().then(setDocuments).catch(() => setDocuments([]));
         if (nextCredentials) {
           setProfessionalType(nextCredentials.professional_type);
           setEducation(nextCredentials.education ?? "");
@@ -80,6 +91,9 @@ export default function ProfileScreen() {
         }
       } else if (profile.role === "institution") {
         setInstitution(await api.getMyInstitution());
+      }
+      if (profile.role !== "admin") {
+        api.getMyDocuments().then(setDocuments).catch(() => setDocuments([]));
       }
     } catch (caught) {
       setError(getErrorMessage(caught));
@@ -197,6 +211,22 @@ export default function ProfileScreen() {
       setError(getErrorMessage(caught));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const openDocument = async (document: CredentialDocument) => {
+    if (!api) return;
+    const preview = prepareDocumentWindow();
+    setOpeningId(document.id);
+    setError("");
+    try {
+      const url = await api.getDocumentUrl(document.storage_path);
+      await openDocumentUrl(url, preview);
+    } catch (caught) {
+      preview?.close();
+      setError(getErrorMessage(caught));
+    } finally {
+      setOpeningId(null);
     }
   };
 
@@ -432,11 +462,15 @@ export default function ProfileScreen() {
         </Card>
       )}
 
-      {profile.role === "nurse" && (
+      {profile.role !== "admin" && (
         <Card style={styles.card}>
           <SectionTitle
             title="Documentos"
-            subtitle="Sube cédula, título y registro profesional para la verificación."
+            subtitle={
+              profile.role === "institution"
+                ? "Sube RUT, cámara de comercio y documentos de representación para la verificación."
+                : "Sube cédula, título y registro profesional para la verificación."
+            }
           />
           <Button
             label="Subir documento"
@@ -452,11 +486,13 @@ export default function ProfileScreen() {
           ) : (
             documents.map((document) => (
               <View key={document.id} style={styles.documentRow}>
-                <Ionicons
-                  name="document-attach-outline"
-                  size={18}
-                  color={colors.primary}
-                />
+                <View style={styles.documentIcon}>
+                  <Ionicons
+                    name="document-attach-outline"
+                    size={17}
+                    color={colors.primary}
+                  />
+                </View>
                 <View style={styles.documentText}>
                   <Text style={styles.documentName} numberOfLines={1}>
                     {document.name}
@@ -465,17 +501,44 @@ export default function ProfileScreen() {
                     {formatRelative(document.created_at)}
                   </Text>
                 </View>
-                <Pressable
-                  onPress={() => void removeDocument(document.id)}
-                  disabled={deletingId === document.id}
-                  hitSlop={8}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={18}
-                    color={colors.danger}
-                  />
-                </Pressable>
+                <View style={styles.documentActions}>
+                  <Pressable
+                    onPress={() => void openDocument(document)}
+                    disabled={openingId === document.id}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver ${document.name}`}
+                    style={styles.documentAction}
+                  >
+                    {openingId === document.id ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons
+                        name="eye-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => void removeDocument(document.id)}
+                    disabled={deletingId === document.id}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Eliminar ${document.name}`}
+                    style={styles.documentAction}
+                  >
+                    {deletingId === document.id ? (
+                      <ActivityIndicator size="small" color={colors.danger} />
+                    ) : (
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color={colors.danger}
+                      />
+                    )}
+                  </Pressable>
+                </View>
               </View>
             ))
           )}
@@ -771,12 +834,34 @@ const styles = StyleSheet.create({
   documentRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    padding: spacing.md,
+    gap: 9,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 12,
+    padding: 10,
+  },
+  documentIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
   documentText: { flex: 1 },
-  documentName: { fontSize: 13, fontWeight: "700", color: colors.navy },
-  documentMeta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  documentName: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: colors.navy,
+    letterSpacing: -0.1,
+  },
+  documentMeta: { fontSize: 10.5, color: colors.textMuted, marginTop: 2 },
+  documentActions: { flexDirection: "row", alignItems: "center", gap: 4 },
+  documentAction: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

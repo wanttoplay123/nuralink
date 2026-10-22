@@ -52,6 +52,7 @@ export interface AppApi {
   setUserRole(userId: string, role: Role): Promise<void>;
   getMyDocuments(): Promise<CredentialDocument[]>;
   getAllDocuments(): Promise<CredentialDocument[]>;
+  getDocumentUrl(storagePath: string): Promise<string>;
   uploadDocument(file: {
     name: string;
     mimeType: string | null;

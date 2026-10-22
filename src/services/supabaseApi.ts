@@ -457,6 +457,14 @@ export const supabaseApi: AppApi = {
     return (data ?? []) as CredentialDocument[];
   },
 
+  async getDocumentUrl(storagePath: string) {
+    const { data, error } = await db()
+      .storage.from("documents")
+      .createSignedUrl(storagePath, 60 * 10);
+    if (error) throw error;
+    return data.signedUrl;
+  },
+
   async uploadDocument(file: {
     name: string;
     mimeType: string | null;

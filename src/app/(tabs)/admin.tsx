@@ -1,5 +1,11 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Redirect, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "@/context/app";
@@ -19,11 +25,16 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { confirm } from "@/lib/confirm";
 import {
+  openDocumentUrl,
+  prepareDocumentWindow,
+} from "@/lib/documentPreview";
+import {
+  formatRelative,
   professionalTypeLabel,
   roleLabel,
 } from "@/lib/format";
 import { colors, shadow, spacing } from "@/lib/theme";
-import type { AdminData, Role } from "@/types";
+import type { AdminData, CredentialDocument, Role } from "@/types";
 
 const roleShort: Record<Role, string> = {
   nurse: "Enfermera",
@@ -40,16 +51,23 @@ const roleTone: Record<Role, "neutral" | "info" | "success"> = {
 export default function AdminScreen() {
   const { profile, api } = useApp();
   const [data, setData] = useState<AdminData | null>(null);
+  const [documents, setDocuments] = useState<CredentialDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [busyRole, setBusyRole] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     if (!api) return;
     setError("");
     try {
-      setData(await api.getAdminData());
+      const [nextData, nextDocuments] = await Promise.all([
+        api.getAdminData(),
+        api.getAllDocuments(),
+      ]);
+      setData(nextData);
+      setDocuments(nextDocuments);
     } catch (caught) {
       setError(getErrorMessage(caught));
     } finally {
@@ -135,6 +153,22 @@ export default function AdminScreen() {
     );
   };
 
+  const openDocument = async (document: CredentialDocument) => {
+    if (!api) return;
+    const preview = prepareDocumentWindow();
+    setOpeningId(document.id);
+    setError("");
+    try {
+      const url = await api.getDocumentUrl(document.storage_path);
+      await openDocumentUrl(url, preview);
+    } catch (caught) {
+      preview?.close();
+      setError(getErrorMessage(caught));
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   if (loading) {
     return (
       <Screen>
@@ -146,6 +180,17 @@ export default function AdminScreen() {
   const institutions = data?.institutions ?? [];
   const credentials = data?.credentials ?? [];
   const users = data?.users ?? [];
+  const credentialUserIds = new Set(
+    credentials.map((credential) => credential.user_id)
+  );
+  const institutionOwnerIds = new Set(
+    institutions.map((institution) => institution.created_by)
+  );
+  const otherDocuments = documents.filter(
+    (document) =>
+      !credentialUserIds.has(document.user_id) &&
+      !institutionOwnerIds.has(document.user_id)
+  );
   const pendingInstitutions = institutions.filter(
     (item) => item.verification_status === "pending"
   );
@@ -303,6 +348,13 @@ export default function AdminScreen() {
                 NIT: {institution.nit || "Sin registrar"} · Dirección:{" "}
                 {institution.address || "Sin registrar"}
               </Text>
+              <DocumentList
+                documents={documents.filter(
+                  (document) => document.user_id === institution.created_by
+                )}
+                openingId={openingId}
+                onOpen={openDocument}
+              />
               {institution.verification_status === "pending" ? (
                 <View style={styles.actions}>
                   <Button
@@ -406,6 +458,14 @@ export default function AdminScreen() {
                 ) : null}
               </View>
 
+              <DocumentList
+                documents={documents.filter(
+                  (document) => document.user_id === credential.user_id
+                )}
+                openingId={openingId}
+                onOpen={openDocument}
+              />
+
               {credential.verification_status === "pending" ? (
                 <View style={styles.actions}>
                   <Button
@@ -445,7 +505,95 @@ export default function AdminScreen() {
           ))
         )}
       </View>
+
+      {otherDocuments.length > 0 ? (
+        <View style={styles.section}>
+          <SectionTitle
+            title="Otros documentos"
+            subtitle="Archivos de cuentas que aún no completaron su perfil profesional."
+          />
+          <Card style={styles.card}>
+            <DocumentList
+              documents={otherDocuments}
+              openingId={openingId}
+              onOpen={openDocument}
+              subtitleForDocument={(document) => {
+                const owner = users.find((user) => user.id === document.user_id);
+                return owner
+                  ? `${owner.full_name} · ${roleLabel(owner.role)}`
+                  : "Cuenta sin identificar";
+              }}
+            />
+          </Card>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+function DocumentList({
+  documents,
+  openingId,
+  onOpen,
+  subtitleForDocument,
+}: {
+  documents: CredentialDocument[];
+  openingId: string | null;
+  onOpen: (document: CredentialDocument) => void;
+  subtitleForDocument?: (document: CredentialDocument) => string;
+}) {
+  return (
+    <View style={styles.documents}>
+      <View style={styles.documentsHeading}>
+        <View style={styles.documentsHeadingLeft}>
+          <Ionicons name="folder-open-outline" size={14} color={colors.primary} />
+          <Text style={styles.documentsTitle}>Documentos</Text>
+        </View>
+        <Text style={styles.documentsCount}>{documents.length}</Text>
+      </View>
+      {documents.length === 0 ? (
+        <Text style={styles.noDocuments}>Sin documentos adjuntos.</Text>
+      ) : (
+        documents.map((document) => (
+          <View key={document.id} style={styles.documentRow}>
+            <View style={styles.documentIcon}>
+              <Ionicons
+                name="document-attach-outline"
+                size={16}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.documentText}>
+              <Text style={styles.documentName} numberOfLines={1}>
+                {document.name}
+              </Text>
+              <Text style={styles.documentMeta} numberOfLines={1}>
+                {subtitleForDocument
+                  ? `${subtitleForDocument(document)} · `
+                  : ""}
+                {formatRelative(document.created_at)}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => onOpen(document)}
+              disabled={openingId === document.id}
+              style={({ pressed }) => [
+                styles.documentOpen,
+                pressed && styles.documentOpenPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Ver ${document.name}`}
+            >
+              {openingId === document.id ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="eye-outline" size={16} color={colors.primary} />
+              )}
+            </Pressable>
+          </View>
+        ))
+      )}
+    </View>
   );
 }
 
@@ -503,6 +651,77 @@ const styles = StyleSheet.create({
   detail: { fontSize: 11, color: colors.textMuted, lineHeight: 17 },
   detailBlock: { gap: 3 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  documents: {
+    gap: 7,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+  },
+  documentsHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  documentsHeadingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  documentsTitle: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: colors.textMuted,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  documentsCount: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: colors.primaryDark,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: "hidden",
+  },
+  noDocuments: {
+    fontSize: 10.5,
+    color: colors.textSoft,
+    lineHeight: 16,
+  },
+  documentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    padding: 8,
+  },
+  documentIcon: {
+    width: 29,
+    height: 29,
+    borderRadius: 9,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  documentText: { flex: 1 },
+  documentName: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: colors.navy,
+  },
+  documentMeta: { fontSize: 9.5, color: colors.textMuted, marginTop: 1 },
+  documentOpen: {
+    width: 29,
+    height: 29,
+    borderRadius: 9,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  documentOpenPressed: { opacity: 0.6 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   action: { flexGrow: 1 },
   roleRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
