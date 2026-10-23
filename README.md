@@ -17,8 +17,9 @@ enfermería que pueden cubrir turnos.
 - Panel institucional para publicar turnos y revisar candidatos.
 - Aceptación atómica de una postulación: el turno queda cubierto y las demás
   postulaciones se rechazan.
-- Panel administrativo para verificar instituciones, credenciales, revisar
-  documentos adjuntos y gestionar roles de usuario.
+- Panel administrativo con tablero, búsqueda y filtros por estado para verificar
+  instituciones y credenciales, revisar documentos adjuntos y gestionar roles de
+  usuario.
 - Chat entre institución y profesional después de aceptar una postulación, con
   actualización en tiempo real.
 - Notificaciones dentro de la aplicación en tiempo real, incluyendo mensajes.
