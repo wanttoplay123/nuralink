@@ -532,12 +532,14 @@ export default function AdminScreen() {
     />
   ) : undefined;
 
-  const tabs: {
+  type AdminTabOption = {
     key: AdminTab;
     label: string;
     icon: IconName;
     count: number;
-  }[] = [
+  };
+
+  const tabs: AdminTabOption[] = [
     {
       key: "pending",
       label: "Pendientes",
@@ -834,6 +836,31 @@ export default function AdminScreen() {
     );
   };
 
+  const renderTab = (tab: AdminTabOption) => {
+    const active = activeTab === tab.key;
+    return (
+      <Pressable
+        key={tab.key}
+        onPress={() => selectTab(tab.key)}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: active }}
+        style={[styles.tab, compact && styles.tabCompact, active && styles.tabActive]}
+      >
+        <Ionicons
+          name={tab.icon}
+          size={15}
+          color={active ? colors.white : colors.textMuted}
+        />
+        <Text style={[styles.tabText, active && styles.tabTextActive]}>
+          {tab.label}
+        </Text>
+        <Text style={[styles.tabCount, active && styles.tabCountActive]}>
+          {tab.count}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <>
       <Screen
@@ -847,7 +874,13 @@ export default function AdminScreen() {
           subtitle="Verificaciones, roles y documentos organizados en un solo lugar."
           right={
             <Badge
-              label={pendingTotal === 0 ? "Al día" : `${pendingTotal} pendientes`}
+              label={
+                pendingTotal === 0
+                  ? "Al día"
+                  : `${pendingTotal} ${
+                      pendingTotal === 1 ? "pendiente" : "pendientes"
+                    }`
+              }
               tone={pendingTotal === 0 ? "success" : "warning"}
             />
           }
@@ -865,7 +898,13 @@ export default function AdminScreen() {
             icon="time-outline"
             label="Pendientes"
             value={pendingTotal}
-            hint={pendingTotal === 0 ? "Todo al día" : "Requieren revisión"}
+            hint={
+              pendingTotal === 0
+                ? "Todo al día"
+                : pendingTotal === 1
+                  ? "Requiere revisión"
+                  : "Requieren revisión"
+            }
             iconColor={colors.warning}
             iconBackground={colors.warningSoft}
             active={activeTab === "pending"}
@@ -898,7 +937,13 @@ export default function AdminScreen() {
             icon="folder-open-outline"
             label="Documentos"
             value={documents.length}
-            hint={documents.length === 1 ? "1 archivo cargado" : "Archivos cargados"}
+            hint={
+              documents.length === 0
+                ? "Sin archivos"
+                : documents.length === 1
+                  ? "1 archivo cargado"
+                  : `${documents.length} archivos cargados`
+            }
             iconColor={colors.success}
             iconBackground={colors.successSoft}
             active={activeTab === "documents"}
@@ -906,37 +951,18 @@ export default function AdminScreen() {
           />
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabsScroll}
-          contentContainerStyle={styles.tabsRow}
-        >
-          {tabs.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => selectTab(tab.key)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                style={[styles.tab, active && styles.tabActive]}
-              >
-                <Ionicons
-                  name={tab.icon}
-                  size={15}
-                  color={active ? colors.white : colors.textMuted}
-                />
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                  {tab.label}
-                </Text>
-                <Text style={[styles.tabCount, active && styles.tabCountActive]}>
-                  {tab.count}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        {compact ? (
+          <View style={styles.tabsGrid}>{tabs.map(renderTab)}</View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tabsScroll}
+            contentContainerStyle={styles.tabsRow}
+          >
+            {tabs.map(renderTab)}
+          </ScrollView>
+        )}
 
         <View style={styles.toolbar}>
           <SearchBox
@@ -1534,7 +1560,7 @@ function documentIconName(document: CredentialDocument): IconName {
 }
 
 const styles = StyleSheet.create({
-  adminContent: { maxWidth: 1040 },
+  adminContent: { maxWidth: 1040, paddingBottom: 120 },
   summaryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1584,6 +1610,11 @@ const styles = StyleSheet.create({
   summaryHint: { fontSize: 9.5, color: colors.textMuted, lineHeight: 13 },
   tabsScroll: { flexGrow: 0 },
   tabsRow: { gap: 8, paddingRight: 4 },
+  tabsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
   tab: {
     flexDirection: "row",
     alignItems: "center",
@@ -1594,6 +1625,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+  },
+  tabCompact: {
+    flexGrow: 1,
+    flexBasis: "45%",
+    justifyContent: "center",
   },
   tabActive: {
     backgroundColor: colors.primary,
