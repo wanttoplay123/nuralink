@@ -392,7 +392,9 @@ function heroContent(
     eyebrow: "VERIFICACIONES",
     title:
       counts.pending > 0
-        ? `${counts.pending} pendientes de revisión.`
+        ? `${counts.pending} ${
+            counts.pending === 1 ? "pendiente" : "pendientes"
+          } de revisión.`
         : "Todo al día.",
     body: "Revisa instituciones y credenciales profesionales.",
     cta: "Revisar",
