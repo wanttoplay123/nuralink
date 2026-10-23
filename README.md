@@ -25,7 +25,8 @@ enfermería que pueden cubrir turnos.
 - Recuperación de contraseña por correo.
 - Términos y consentimiento obligatorio al registrarse.
 - Subida de documentos (cédula, título, registro y documentos institucionales)
-  para verificación, con vista previa para el dueño y el administrador.
+  para verificación, con vista previa integrada, zoom y descarga para el dueño y
+  el administrador.
 
 ## 1. Instalar dependencias
 

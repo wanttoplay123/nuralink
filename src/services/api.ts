@@ -53,6 +53,10 @@ export interface AppApi {
   getMyDocuments(): Promise<CredentialDocument[]>;
   getAllDocuments(): Promise<CredentialDocument[]>;
   getDocumentUrl(storagePath: string): Promise<string>;
+  getDocumentDownloadUrl(
+    storagePath: string,
+    fileName: string
+  ): Promise<string>;
   uploadDocument(file: {
     name: string;
     mimeType: string | null;

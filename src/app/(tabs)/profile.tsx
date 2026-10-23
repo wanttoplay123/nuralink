@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as DocumentPicker from "expo-document-picker";
 import { useApp } from "@/context/app";
+import { DocumentPreviewModal } from "@/components/DocumentPreviewModal";
 import {
   Avatar,
   Button,
@@ -25,10 +26,7 @@ import {
 } from "@/components/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { confirm } from "@/lib/confirm";
-import {
-  openDocumentUrl,
-  prepareDocumentWindow,
-} from "@/lib/documentPreview";
+import { downloadDocumentUrl } from "@/lib/documentPreview";
 import {
   professionalTypeLabel,
   roleLabel,
@@ -51,7 +49,11 @@ export default function ProfileScreen() {
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [documents, setDocuments] = useState<CredentialDocument[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] =
+    useState<CredentialDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [professionalType, setProfessionalType] =
     useState<ProfessionalType>("nurse");
@@ -216,18 +218,33 @@ export default function ProfileScreen() {
 
   const openDocument = async (document: CredentialDocument) => {
     if (!api) return;
-    const preview = prepareDocumentWindow();
-    setOpeningId(document.id);
-    setError("");
+    setPreviewDocument(document);
+    setPreviewUrl(null);
+    setPreviewError("");
+    setPreviewLoading(true);
     try {
-      const url = await api.getDocumentUrl(document.storage_path);
-      await openDocumentUrl(url, preview);
+      setPreviewUrl(await api.getDocumentUrl(document.storage_path));
     } catch (caught) {
-      preview?.close();
-      setError(getErrorMessage(caught));
+      setPreviewError(getErrorMessage(caught));
     } finally {
-      setOpeningId(null);
+      setPreviewLoading(false);
     }
+  };
+
+  const closePreview = () => {
+    setPreviewDocument(null);
+    setPreviewUrl(null);
+    setPreviewError("");
+    setPreviewLoading(false);
+  };
+
+  const downloadPreview = async () => {
+    if (!api || !previewDocument) return;
+    const url = await api.getDocumentDownloadUrl(
+      previewDocument.storage_path,
+      previewDocument.name
+    );
+    await downloadDocumentUrl(url);
   };
 
   const removeDocument = async (documentId: string) => {
@@ -270,8 +287,9 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen refreshing={loading} onRefresh={load}>
-      <LinearGradient
+    <>
+      <Screen refreshing={loading} onRefresh={load}>
+        <LinearGradient
         colors={gradients.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -504,21 +522,16 @@ export default function ProfileScreen() {
                 <View style={styles.documentActions}>
                   <Pressable
                     onPress={() => void openDocument(document)}
-                    disabled={openingId === document.id}
                     hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={`Ver ${document.name}`}
                     style={styles.documentAction}
                   >
-                    {openingId === document.id ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Ionicons
-                        name="eye-outline"
-                        size={18}
-                        color={colors.primary}
-                      />
-                    )}
+                    <Ionicons
+                      name="eye-outline"
+                      size={18}
+                      color={colors.primary}
+                    />
                   </Pressable>
                   <Pressable
                     onPress={() => void removeDocument(document.id)}
@@ -693,7 +706,18 @@ export default function ProfileScreen() {
         icon="log-out-outline"
         onPress={confirmSignOut}
       />
-    </Screen>
+      </Screen>
+      <DocumentPreviewModal
+        key={previewDocument?.id ?? "closed"}
+        visible={Boolean(previewDocument)}
+        document={previewDocument}
+        url={previewUrl}
+        loading={previewLoading}
+        error={previewError}
+        onClose={closePreview}
+        onDownload={downloadPreview}
+      />
+    </>
   );
 }
 

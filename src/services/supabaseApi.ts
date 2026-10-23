@@ -465,6 +465,14 @@ export const supabaseApi: AppApi = {
     return data.signedUrl;
   },
 
+  async getDocumentDownloadUrl(storagePath: string, fileName: string) {
+    const { data, error } = await db()
+      .storage.from("documents")
+      .createSignedUrl(storagePath, 60 * 10, { download: fileName });
+    if (error) throw error;
+    return data.signedUrl;
+  },
+
   async uploadDocument(file: {
     name: string;
     mimeType: string | null;

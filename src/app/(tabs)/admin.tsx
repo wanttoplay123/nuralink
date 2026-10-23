@@ -1,14 +1,9 @@
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Redirect, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "@/context/app";
+import { DocumentPreviewModal } from "@/components/DocumentPreviewModal";
 import {
   Avatar,
   Badge,
@@ -24,10 +19,7 @@ import {
 } from "@/components/ui";
 import { getErrorMessage } from "@/lib/errors";
 import { confirm } from "@/lib/confirm";
-import {
-  openDocumentUrl,
-  prepareDocumentWindow,
-} from "@/lib/documentPreview";
+import { downloadDocumentUrl } from "@/lib/documentPreview";
 import {
   formatRelative,
   professionalTypeLabel,
@@ -55,7 +47,11 @@ export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [busyRole, setBusyRole] = useState<string | null>(null);
-  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] =
+    useState<CredentialDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -155,18 +151,33 @@ export default function AdminScreen() {
 
   const openDocument = async (document: CredentialDocument) => {
     if (!api) return;
-    const preview = prepareDocumentWindow();
-    setOpeningId(document.id);
-    setError("");
+    setPreviewDocument(document);
+    setPreviewUrl(null);
+    setPreviewError("");
+    setPreviewLoading(true);
     try {
-      const url = await api.getDocumentUrl(document.storage_path);
-      await openDocumentUrl(url, preview);
+      setPreviewUrl(await api.getDocumentUrl(document.storage_path));
     } catch (caught) {
-      preview?.close();
-      setError(getErrorMessage(caught));
+      setPreviewError(getErrorMessage(caught));
     } finally {
-      setOpeningId(null);
+      setPreviewLoading(false);
     }
+  };
+
+  const closePreview = () => {
+    setPreviewDocument(null);
+    setPreviewUrl(null);
+    setPreviewError("");
+    setPreviewLoading(false);
+  };
+
+  const downloadPreview = async () => {
+    if (!api || !previewDocument) return;
+    const url = await api.getDocumentDownloadUrl(
+      previewDocument.storage_path,
+      previewDocument.name
+    );
+    await downloadDocumentUrl(url);
   };
 
   if (loading) {
@@ -199,8 +210,9 @@ export default function AdminScreen() {
   );
 
   return (
-    <Screen refreshing={loading} onRefresh={load}>
-      <ScreenHeader
+    <>
+      <Screen refreshing={loading} onRefresh={load}>
+        <ScreenHeader
         eyebrow="ADMINISTRACIÓN"
         title="Verificaciones"
         subtitle="Revisa instituciones y credenciales profesionales antes de habilitar su participación."
@@ -352,7 +364,6 @@ export default function AdminScreen() {
                 documents={documents.filter(
                   (document) => document.user_id === institution.created_by
                 )}
-                openingId={openingId}
                 onOpen={openDocument}
               />
               {institution.verification_status === "pending" ? (
@@ -462,7 +473,6 @@ export default function AdminScreen() {
                 documents={documents.filter(
                   (document) => document.user_id === credential.user_id
                 )}
-                openingId={openingId}
                 onOpen={openDocument}
               />
 
@@ -515,7 +525,6 @@ export default function AdminScreen() {
           <Card style={styles.card}>
             <DocumentList
               documents={otherDocuments}
-              openingId={openingId}
               onOpen={openDocument}
               subtitleForDocument={(document) => {
                 const owner = users.find((user) => user.id === document.user_id);
@@ -527,18 +536,27 @@ export default function AdminScreen() {
           </Card>
         </View>
       ) : null}
-    </Screen>
+      </Screen>
+      <DocumentPreviewModal
+        key={previewDocument?.id ?? "closed"}
+        visible={Boolean(previewDocument)}
+        document={previewDocument}
+        url={previewUrl}
+        loading={previewLoading}
+        error={previewError}
+        onClose={closePreview}
+        onDownload={downloadPreview}
+      />
+    </>
   );
 }
 
 function DocumentList({
   documents,
-  openingId,
   onOpen,
   subtitleForDocument,
 }: {
   documents: CredentialDocument[];
-  openingId: string | null;
   onOpen: (document: CredentialDocument) => void;
   subtitleForDocument?: (document: CredentialDocument) => string;
 }) {
@@ -576,7 +594,6 @@ function DocumentList({
             </View>
             <Pressable
               onPress={() => onOpen(document)}
-              disabled={openingId === document.id}
               style={({ pressed }) => [
                 styles.documentOpen,
                 pressed && styles.documentOpenPressed,
@@ -584,11 +601,7 @@ function DocumentList({
               accessibilityRole="button"
               accessibilityLabel={`Ver ${document.name}`}
             >
-              {openingId === document.id ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons name="eye-outline" size={16} color={colors.primary} />
-              )}
+              <Ionicons name="eye-outline" size={16} color={colors.primary} />
             </Pressable>
           </View>
         ))
