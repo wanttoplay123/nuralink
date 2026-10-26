@@ -25,6 +25,19 @@ export function getErrorMessage(error: unknown): string {
   if (message.includes("Email not confirmed")) {
     return "Debes confirmar tu correo antes de iniciar sesión.";
   }
+  if (
+    message.toLowerCase().includes("email rate limit") ||
+    code === "over_email_send_rate_limit"
+  ) {
+    return "No pudimos enviar el correo de confirmación en este momento. Intenta de nuevo en unos minutos.";
+  }
+  if (
+    (message.toLowerCase().includes("email address") &&
+      message.toLowerCase().includes("invalid")) ||
+    code === "email_address_invalid"
+  ) {
+    return "Ingresa un correo electrónico válido.";
+  }
   if (message.includes("User already registered")) {
     return "No pudimos crear la cuenta. Si ya tienes una, inicia sesión o recupera tu contraseña.";
   }
