@@ -148,6 +148,8 @@ supabase/
   administración pueden leerlos.
 - Los administradores se asignan y gestionan roles con una función segura
   (`admin_set_role`), nunca con permisos directos del cliente.
+- Cabeceras de seguridad en Render/Netlify: CSP, anti-clickjacking,
+  `Referrer-Policy`, `Permissions-Policy`, `nosniff` y HSTS.
 
 ## 5. Pendientes antes de producción
 
