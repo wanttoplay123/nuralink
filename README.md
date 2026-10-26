@@ -160,7 +160,7 @@ supabase/
 | NSL-01 Registro sin confirmación de correo | Corregido: confirmación obligatoria activa. |
 | NSL-02 Enumeración de cuentas en registro | Mitigado: mensaje genérico y confirmación de correo. |
 | NSL-03 Cabeceras de seguridad ausentes | Corregido en Render y Netlify. |
-| NSL-04 `_internal/health` expuesto | Endpoint de la plataforma Supabase, no del proyecto. No hay funciones desplegadas; solo expone salud del contenedor. Reportado al proveedor; sin datos de usuarios. |
+| NSL-04 `_internal/health` expuesto | Endpoint de la plataforma Supabase, no del proyecto. No hay funciones desplegadas; solo expone salud del contenedor. Riesgo aceptado; se puede reportar al proveedor. |
 | NSL-05 Clave publicable en el bundle | Aceptado: clave pública por diseño, protegida por RLS. |
 
 ## 5. Pendientes antes de producción
