@@ -150,12 +150,25 @@ supabase/
   (`admin_set_role`), nunca con permisos directos del cliente.
 - Cabeceras de seguridad en Render/Netlify: CSP, anti-clickjacking,
   `Referrer-Policy`, `Permissions-Policy`, `nosniff` y HSTS.
+- Confirmación de correo obligatoria antes de iniciar sesión
+  (`mailer_autoconfirm: false`).
+
+### Estado de remediación del reporte de seguridad
+
+| Hallazgo | Estado |
+| --- | --- |
+| NSL-01 Registro sin confirmación de correo | Corregido: confirmación obligatoria activa. |
+| NSL-02 Enumeración de cuentas en registro | Mitigado: mensaje genérico y confirmación de correo. |
+| NSL-03 Cabeceras de seguridad ausentes | Corregido en Render y Netlify. |
+| NSL-04 `_internal/health` expuesto | Endpoint de la plataforma Supabase, no del proyecto. No hay funciones desplegadas; solo expone salud del contenedor. Reportado al proveedor; sin datos de usuarios. |
+| NSL-05 Clave publicable en el bundle | Aceptado: clave pública por diseño, protegida por RLS. |
 
 ## 5. Pendientes antes de producción
 
 - Notificaciones push fuera de la app (requieren build de desarrollo/EAS y un
   dispositivo físico; las notificaciones en-app ya son en tiempo real).
-- Verificación de correo obligatoria y plantillas de correo personalizadas.
+- Configurar SMTP propio para los correos de confirmación y recuperación, y
+  personalizar las plantillas.
 - Revisión legal de los términos y de las responsabilidades de NURSELINK en cada
   modalidad de cobertura.
 - Pruebas de concurrencia y auditoría de las transiciones de estado.

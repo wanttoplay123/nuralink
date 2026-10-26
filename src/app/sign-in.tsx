@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -46,6 +45,7 @@ export default function SignInScreen() {
   const [resetSent, setResetSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   if (profile) {
     return <Redirect href="/(tabs)" />;
@@ -53,6 +53,7 @@ export default function SignInScreen() {
 
   const submit = async () => {
     setError("");
+    setNotice("");
     if (!email.trim() || !password) {
       setError("Ingresa tu correo y tu contraseña.");
       return;
@@ -96,8 +97,7 @@ export default function SignInScreen() {
           address: registerRole === "institution" ? institutionAddress : undefined,
         });
         if (result.needsConfirmation) {
-          Alert.alert(
-            "Revisa tu correo",
+          setNotice(
             "Te enviamos un enlace de confirmación. Después de confirmar, vuelve a iniciar sesión."
           );
           setMode("login");
@@ -113,6 +113,7 @@ export default function SignInScreen() {
 
   const forgotPassword = async () => {
     setError("");
+    setNotice("");
     if (!email.trim()) {
       setError("Ingresa tu correo para recuperar tu contraseña.");
       return;
@@ -524,6 +525,12 @@ export default function SignInScreen() {
                 </Notice>
               ) : null}
 
+              {notice ? (
+                <Notice tone="success" icon="mail-outline">
+                  {notice}
+                </Notice>
+              ) : null}
+
               {resetSent ? (
                 <Notice tone="success" icon="mail-outline">
                   Revisa tu correo. Te enviamos un enlace para restablecer tu
@@ -542,6 +549,7 @@ export default function SignInScreen() {
                 onPress={() => {
                   setMode(mode === "login" ? "register" : "login");
                   setError("");
+                  setNotice("");
                 }}
                 style={styles.switchLink}
               >
