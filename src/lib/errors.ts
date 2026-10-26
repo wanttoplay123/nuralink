@@ -26,7 +26,7 @@ export function getErrorMessage(error: unknown): string {
     return "Debes confirmar tu correo antes de iniciar sesión.";
   }
   if (message.includes("User already registered")) {
-    return "Ya existe una cuenta con ese correo.";
+    return "No pudimos crear la cuenta. Si ya tienes una, inicia sesión o recupera tu contraseña.";
   }
   if (
     message.includes("Network request failed") ||
